@@ -83,7 +83,7 @@ async def broadcast_click(msg):
         try:
             await websock.send(msg) #send message to each client
         except websockets.exceptions.ConnectionClosed:
-            print("Client disconnected. Do cleanup")
+            print("Client disconnected. Do cleanup ")
             clients.remove(websock)
 async def broadcast(msg):
     print(msg,'show_number')
@@ -101,7 +101,7 @@ async def color(msg):
         try:
             await websock.send(msg) #send message to each client
         except websockets.exceptions.ConnectionClosed:
-            print("Client disconnected. Do cleanup")
+            print("Client disconnected. Do cleanup ")
             clients.remove(websock)
 
 #starts the service and run forever
