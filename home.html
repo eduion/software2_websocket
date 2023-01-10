@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=
+    , initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        .page_wrapper {
+            width: 500px;
+            margin: 50px auto 0;
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .btn {
+            display: block;
+            width: 250px;
+            border: 2px solid skyblue;
+            background-color: antiquewhite;
+            border-radius: 10px;
+            margin: 20px auto 0;
+            text-align: center;
+        }
+
+        .btn:hover {
+            cursor: pointer;
+            background-color: skyblue;
+        }
+
+        p {
+            width: 250px;
+            margin: 10px auto 0;
+        }
+
+        .wrapper {
+            display: none;
+        }
+
+        .start {
+            display: none;
+        }
+
+        td {
+            color: black;
+        }
+    </style>
+</head>
+
+<body onload="doInit()">
+
+    <div class="page_wrapper" id="page_wrapper">
+        <input type="button" value="點擊進入遊戲" class="btn" id="btn" onclick="s.send('play###')">
+        <p>目前遊玩人數: <span id="number">0</span> </p>
+    </div>
+
+    <!-- ------------------------------------------------------------------------------------ -->
+
+    <div class="wrapper" id="wrapper">
+        <span id="waitting"></span>
+        <span class="countdown" id="countdown"></span>
+        <div class="start" id="start">
+            <span class="countdown_state" id="countdown_state"></span>
+            搶地遊戲<br />
+            <table border="1" width="500px" height="500px">
+                <tr>
+                    <td class='cell' id='00'>0</td>
+                    <td class='cell' id='10'>0</td>
+                    <td class='cell' id='20'>0</td>
+                    <td class='cell' id='30'>0</td>
+                    <td class='cell' id='40'>0</td>
+                </tr>
+                <tr>
+                    <td class='cell' id='01'>0</td>
+                    <td class='cell' id='11'>0</td>
+                    <td class='cell' id='21'>0</td>
+                    <td class='cell' id='31'>0</td>
+                    <td class='cell' id='41'>0</td>
+                </tr>
+                <tr>
+                    <td class='cell' id='02'>0</td>
+                    <td class='cell' id='12'>0</td>
+                    <td class='cell' id='22'>0</td>
+                    <td class='cell' id='32'>0</td>
+                    <td class='cell' id='42'>0</td>
+                </tr>
+                <tr>
+                    <td class='cell' id='03'>0</td>
+                    <td class='cell' id='13'>0</td>
+                    <td class='cell' id='23'>0</td>
+                    <td class='cell' id='33'>0</td>
+                    <td class='cell' id='43'>0</td>
+                </tr>
+                <tr>
+                    <td class='cell' id='04'>0</td>
+                    <td class='cell' id='14'>0</td>
+                    <td class='cell' id='24'>0</td>
+                    <td class='cell' id='34'>0</td>
+                    <td class='cell' id='44'>0</td>
+                </tr>
+            </table>
+        </div>
+        <p id="win"></p>
+    </div>
+    <!-- ------------------------------------------------------------------------------------ -->
+    <script>
+        let number = document.getElementById("number")
+        let btn = document.getElementById("btn")
+        let page_wrapper = document.getElementById("page_wrapper")
+        let wrapper = document.getElementById("wrapper")
+        let start = document.getElementById("start")
+        let waitting = document.getElementById("waitting")
+        let countdown = document.getElementById("countdown")
+        let countdown_state = document.getElementById("countdown_state")
+        let cells = document.querySelectorAll(".cell");
+        let win = document.getElementById("win")
+        let flag = 0
+        function doInit() {
+            function log_msg(msg) {
+                console.log(msg);
+            }
+            try {
+                var host = "ws://localhost:8989/"; //設定socker server的ip:port
+                /*if(window.location.hostname) {
+                    host = "ws://" + window.location.hostname + ":4545/";
+                }*/
+
+                s = new WebSocket(host); //建立socket元件
+                //設定幾個主要事件
+                s.onopen = function (e) { log_msg("connected..."); s.send("number###") };
+                s.onclose = function (e) { log_msg("connection closed."); };
+                s.onerror = function (e) { log_msg("connection error."); };
+
+
+                //當server送訊息來時
+                s.onmessage = function (e) {
+                    number.innerHTML = e.data
+                    console.log("onmessage:")
+                    console.log(e.data)
+                }
+            } catch (ex) {
+                log_msg("connection exception:" + ex);
+            }
+        }
+        document.getElementById("btn").addEventListener("click", function () {
+            s.onmessage = function (e) {
+                let notify = e.data.split("###")
+                n = notify[3]
+                if (n === "notify") {
+                    strs = e.data.split('###');
+                    let position = strs[1] + strs[0]
+                    if (strs[2] > 0) {
+                        document.getElementById(position).style.backgroundColor = "skyblue"
+                        document.getElementById(position).innerText = strs[2]
+                    } else if (strs[2] < 0) {
+                        document.getElementById(position).style.backgroundColor = "antiquewhite"
+                        document.getElementById(position).innerText = -strs[2]
+                    } else {
+                        document.getElementById(position).style.backgroundColor = "white"
+                        document.getElementById(position).innerText = "0"
+                    }
+                    console.log(position + " " + strs[2])
+                } else if (n === "end") {
+                    let winner = notify[2]
+                    if (winner === "0") {
+                        win.innerHTML = "藍色方塊玩家獲勝"
+                        let down = 5
+                        let fight = setInterval(function () {
+                            down--
+                            if (down <= 0) {
+                                clearInterval(fight)
+                                s.send("out")
+                                location.reload()
+                            }
+                        }, 1000)
+                    } else if (winner === "1") {
+                        win.innerHTML = "古白色方塊玩家獲勝"
+                        let down = 5
+                        let fight = setInterval(function () {
+                            down--
+                            if (down <= 0) {
+                                clearInterval(fight)
+                                s.send("out")
+                                location.reload()
+                            }
+                        }, 1000)
+                    } else {
+                        win.innerHTML = "平手"
+                        let down = 5
+                        let fight = setInterval(function () {
+                            down--
+                            if (down <= 0) {
+                                clearInterval(fight)
+                                s.send("out")
+                                location.reload()
+                            }
+                        }, 1000)
+                    }
+                } else {
+                    if (e.data != "已經有人在對戰!") {
+                        m = e.data.split("###")
+                        if (m[1] === "prepare") {
+                            console.log(m[1])
+                            number.innerHTML = m[0]
+                        } else {
+                            console.log(m)
+                            number.innerHTML = e.data
+                            page_wrapper.style.display = "none"
+                            wrapper.style.display = "block"
+                            waitting.innerHTML = "等待另一位玩家加入"
+                            console.log("click up:")
+                            console.log(e.data)
+                            if (e.data == 2) {
+                                let number = 4
+                                waitting.innerHTML = "玩家已加入，"
+                                let interval = setInterval(function () {
+                                    number--
+                                    countdown.innerText = "開始對戰倒計時:" + number
+                                    if (number <= 0) {
+                                        clearInterval(interval)
+                                        countdown.style.display = "none"
+                                        waitting.innerHTML = "開始對戰:"
+                                        start.style.display = "block"
+                                        let count = 5 //對戰倒計時
+                                        let fight = setInterval(function () {
+                                            count--
+                                            countdown_state.innerText = count
+                                            if (count <= 0) {
+                                                clearInterval(fight)
+                                                waitting.innerHTML = "對戰結束"
+                                                flag = 1
+                                                s.send("stop###")
+                                            }
+                                        }, 1000)
+                                    }
+                                }, 1000)
+                            }
+                        }
+
+                    } else {
+                        alert("已經有人在對戰!")
+                        number.innerHTML = e.data
+                        console.log("click down:")
+                        console.log(e.data)
+                    }
+                }
+            }
+        })
+
+        cells.forEach(function (el) {
+            el.onclick = function () {
+                id = this.id;
+                console.log(id)
+                if (flag == 0) {
+                    s.send("land###" + id)
+                }
+            }
+        });
+    </script>
+</body>
+
+</html>
